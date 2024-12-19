@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Map Game</title>
+    <style>
+        /* General styles */
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+        }
+        #map {
+            display: grid;
+            grid-template-columns: repeat(9, 60px); /* 9x9 grid */
+            grid-gap: 5px;
+            margin: 20px;
+        }
+        .room {
+            width: 60px;
+            height: 60px;
+            border: 1px solid #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: lightgray;
+        }
+        .character {
+            width: 100%;
+            height: 50%; /* Occupy only the bottom half of the square */
+            background-image: url('../../assets/char.png'); /* Ensure the path is correct */
+            background-color: transparent;
+            background-size: contain;
+            background-position: bottom center; 
+            background-repeat: no-repeat;
+            background-attachment: scroll;
+        }
+        .grid-cell {
+            position: relative; /* Make this cell a positioning context */
+            width: 100px; /* Adjust the size of the grid cell as needed */
+            height: 100px; /* Adjust the size of the grid cell as needed */
+        }
+
+        #inventory {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px;
+            border: 2px solid black;
+            padding: 10px;
+            width: 200px;
+            background-color: beige;
+        }
+        .inventory-slot {
+            width: 50px;
+            height: 50px;
+            border: 1px solid #333;
+            background-color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-size: cover; /* Ensure the image fills the slot */
+        }
+        #controls {
+            display: grid;
+            grid-template-areas: 
+                ". up ."
+                "left . right"
+                ". down .";
+            grid-gap: 10px;
+            margin: 20px;
+            justify-items: center;
+            align-items: center;
+        }
+
+        .control-button {
+            padding: 10px 20px;
+            cursor: pointer;
+            text-align: center;
+            width: 80px; /* Ensure the buttons have a consistent size */
+            height: 40px;
+        }
+
+        .control-button#up {
+            grid-area: up;
+        }
+
+        .control-button#left {
+            grid-area: left;
+        }
+
+        .control-button#down {
+            grid-area: down;
+        }
+
+        .control-button#right {
+            grid-area: right;
+        }
+    </style>
+</head>
+<body>
+    <div id="inventory">
+        <!-- Inventory slots, now showing item images -->
+        <div class="inventory-slot" id="wand"></div>
+        <div class="inventory-slot" id="sword"></div>
+        <div class="inventory-slot" id="key"></div>
+    </div>
+    <div id="map">
+        <!-- Map grid dynamically created -->
+    </div>
+    <div id="controls">
+        <button class="control-button" id="up" onclick="move('up')">Up</button>
+        <button class="control-button" id="left" onclick="move('left')">Left</button>
+        <button class="control-button" id="right" onclick="move('right')">Right</button>
+        <button class="control-button" id="down" onclick="move('down')">Down</button>
+    </div>
+    <br><a href="../../index.html">Back to Index</a>
+    <script>
+        const mapSize = 9; // 9x9 grid
+        const characterImage = '../../assets/char.png'; // Character image
+        let characterPosition = { x: 4, y: 8 }; // Start at southernmost center
+        const items = { wand: false, sword: false, key: false }; // Inventory items
+        let itemPositions = {}; // Object to track item positions on the grid
+        let chestPosition = null; // Position of the chest
+
+        // Populate the map
+        const map = document.getElementById('map');
+        for (let i = 0; i < mapSize * mapSize; i++) {
+            const room = document.createElement('div');
+            room.classList.add('room');
+            map.appendChild(room);
+        }
+
+        // Update map and character
+        function updateMap() {
+            const rooms = document.querySelectorAll('.room');
+            rooms.forEach((room, index) => {
+                room.innerHTML = ''; // Clear previous state
+                if (index === characterPosition.y * mapSize + characterPosition.x) {
+                    const character = document.createElement('div');
+                    character.classList.add('character');
+                    room.appendChild(character);
+                }
+                // Check if there's an item in this room
+                for (const item in itemPositions) {
+                    if (itemPositions[item] === index) {
+                        // Do not display the item name or image until the character finds it
+                    }
+                }
+                // Check if the chest is in this room
+                if (index === chestPosition) {
+                    // Do not display the chest until the character finds it
+                }
+            });
+        }
+
+        // Update inventory
+        function updateInventory() {
+            for (const [item, found] of Object.entries(items)) {
+                const slot = document.getElementById(item);
+                if (found) {
+                    // When item is found, display the item image in the slot
+                    slot.style.backgroundImage = `url('../../assets/${item}.png')`; // Show item image in the inventory
+                    slot.style.backgroundSize = 'cover'; // Make the image fill the slot
+                } else {
+                    slot.style.backgroundImage = ''; // Clear image if item not found
+                }
+            }
+        }
+
+        // Movement logic
+        function move(direction) {
+            let moved = false;
+            if (direction === 'up' && characterPosition.y > 0) {
+                characterPosition.y--;
+                moved = true;
+            }
+            if (direction === 'down' && characterPosition.y < mapSize - 1) {
+                characterPosition.y++;
+                moved = true;
+            }
+            if (direction === 'left' && characterPosition.x > 0) {
+                characterPosition.x--;
+                moved = true;
+            }
+            if (direction === 'right' && characterPosition.x < mapSize - 1) {
+                characterPosition.x++;
+                moved = true;
+            }
+            
+            // Check if there's an item in the new cell
+            const currentCell = characterPosition.y * mapSize + characterPosition.x;
+            for (const item in itemPositions) {
+                if (itemPositions[item] === currentCell && !items[item]) {
+                    items[item] = true; // Mark item as collected
+                    itemPositions[item] = null; // Remove item from the grid
+                    updateInventory();
+                    alert(`You found a ${item}!`);
+                }
+            }
+
+            // Check if the character encounters the chest
+            if (currentCell === chestPosition) {
+                if (items.key) {
+                    alert("You've found the treasure chest and opened it with your key. You're rich beyond your wildest dreams!");
+                    gameOver();
+                } else {
+                    alert("You've found the treasure chest, but it's locked!");
+                }
+            }
+
+            // Skeleton encounter logic
+            if (moved && Math.random() < 0.05) { // 5% chance of encountering a skeleton
+                const skeleton = document.createElement('div');
+                skeleton.style.backgroundImage = 'url("../../assets/skeleton.png")';
+                skeleton.style.backgroundSize = 'cover';
+                skeleton.style.width = '100%';
+                skeleton.style.height = '100%';
+                document.querySelector('.room').appendChild(skeleton);
+
+                if (items.wand) {
+                    items.wand = false; // Lose the wand
+                    updateInventory();
+                    alert('You encountered a skeleton and lost your wand!');
+                } else if (items.sword) {
+                    if (Math.random() < 0.95) {
+                        alert('You encountered a skeleton and killed it with your sword!');
+                    } else {
+                        alert('You encountered a skeleton and died!');
+                        gameOver();
+                    }
+                } else {
+                    alert('You encountered a skeleton and died!');
+                    gameOver();
+                }
+            }
+
+            updateMap();
+        }
+
+        // Randomly place items and chest on the grid
+        function placeItems() {
+            const itemKeys = Object.keys(items);
+            itemKeys.forEach(item => {
+                let randomPosition;
+                do {
+                    randomPosition = Math.floor(Math.random() * (mapSize * mapSize)); // Random cell index
+                } while (Object.values(itemPositions).includes(randomPosition)); // Ensure unique positions for items
+                itemPositions[item] = randomPosition;
+            });
+
+            // Place the chest
+            let randomChestPosition;
+            do {
+                randomChestPosition = Math.floor(Math.random() * (mapSize * mapSize)); // Random cell index
+            } while (Object.values(itemPositions).includes(randomChestPosition)); // Ensure unique position for the chest
+            chestPosition = randomChestPosition;
+        }
+
+        // Game over logic
+        function gameOver() {
+            alert('Game Over!');
+            // Disable buttons
+            const buttons = document.querySelectorAll('.control-button');
+            buttons.forEach(button => button.disabled = true);
+        }
+
+        // Initialize game
+        function startGame() {
+            alert("You're finally here. There is no turning back now: you'll either find the treasure chest... Or die trying!");
+            alert("Let's hope you find a weapon before a skeleton finds you. You can hear steps... Quickly! Move!");
+            placeItems();
+            updateMap();
+            updateInventory();
+        }
+
+        startGame();
+    </script>
+</body>
+</html>
