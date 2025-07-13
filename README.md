@@ -7,4 +7,4 @@ This project contains:
 4. A page containing additional career information, also built using a Bootstrap template. Also contains an embedded Tableau visualization.
 
 To see the published result, please visit:
-https://ericvmag.github.io/IS501/
+https://ericvmag.github.io/HTML-Resume/
